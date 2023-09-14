@@ -1,0 +1,65 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+#victim config
+Vagrant.configure("2") do |config|
+ config.vm.define "Victim" do |server|
+  server.vm.box = "Win10"
+  server.vm.box_check_update = false
+
+  server.vm.boot_timeout = 600000000
+  server.vm.communicator = "winrm"
+  server.winrm.port = 55985
+  
+  
+  
+  
+  #files and commands
+  server.vm.provision "file", source: "office/setup.exe", destination: "C:\\Users\\vagrant\\Desktop\\" # office setup
+  server.vm.provision "file", source: "office/officedeploymenttool.exe", destination: "C:\\Users\\vagrant\\Desktop\\" # office deployment tool
+  server.vm.provision "file", source: "office/configuration-Office2019Enterprise.xml", destination: "C:\\Users\\vagrant\\Desktop\\" # office config file
+  server.vm.provision "file", source: "msdt-follina/nc64.exe", destination: "C:\\Users\\vagrant\\Desktop\\" # netcat file
+  server.vm.provision :shell, inline: "C:\\Users\\vagrant\\Desktop\\setup.exe /configure C:\\Users\\vagrant\\Desktop\\configuration-Office2019Enterprise.xml" #run config file
+  server.vm.provision "shell", privileged: "true", powershell_elevated_interactive: "true", inline: "Set-MpPreference -DisableRealtimeMonitoring $true" # disable Windows defender
+  
+  server.vm.provision "shell", inline: "mkdir C:\\shared"
+  server.vm.provision "shell", privileged: "true", powershell_elevated_interactive: "true", inline: "New-SmbShare -Name 'SMB_victim' -path 'c:\\shared' -FullAccess 'ANONYMOUS LOGON','Everyone'" #create SMB file share
+  
+  
+  if ENV["production"] == "true" # if VM is being built for production
+      server.vm.network "public_network"#, ip: "192.168.1.101" #:dev => "wlan0" # then create a bridged interface for access in the lab
+    else # if the VM is being build for development
+      server.vm.network "private_network", ip: "192.168.56.2" # then create a private interface for development
+    end
+  
+  # Virtualbox settings
+  server.vm.provider "virtualbox" do |v|
+    v.name = "Follina_Cmet_ctf"    # Sets the new VM's name
+    v.gui = true        # Enables the hypervisor's GUI
+    v.memory = 2048     # Sets the VM's RAM
+    v.customize ["modifyvm", :id, "--draganddrop", "hosttoguest"] # Enables drag->
+    v.customize ["modifyvm", :id, "--clipboard", "bidirectional"] # Enables a bid>
+   end
+  end
+  
+  
+  
+   # attacker machine config
+   config.vm.define "attacker" do |attacker|
+    attacker.vm.box = "kalilinux/rolling"
+    attacker.vm.hostname = "KaliAttacker"
+    
+    
+    if ENV["production"] == "true" # if VM is being built for production
+      attacker.vm.network "public_network"#, ip: "192.168.1.101" #:dev => "wlan0" # then create a bridged interface for access in the lab
+    else # if the VM is being build for development
+      attacker.vm.network "private_network", ip: "192.168.56.3" # then create a private interface for development
+    end
+    
+    # John hammonds script(https://github.com/JohnHammond/msdt-follina)
+    attacker.vm.provision "file", source: "hammonds_script/msdt-follina.zip", destination: "/home/vagrant/Desktop/"
+   end
+end
+
+
+
