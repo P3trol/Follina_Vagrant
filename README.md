@@ -13,7 +13,7 @@ Instructions on attacker machine:
 - Once ive opened the file you should have a reverse shell 
 
 
-## Follina breif
+## Follina brief
 Follina is a Vulnerability in Microsoft Windows Support Diagnostic Tool (MSDT) which can be exploited via Microsoft office document. MS word creates an external link to load HTML and then uses msdt to execute the PowerShell code.​ The external reference would be pointing to a malicious server.
 
 Once the office document is executed the office calls out trying to download a temple from an external server, the hardcoded address within the file that would respond with the malicious payload containing an ms-msdt: command-invoking PowerShell Script.​If the downloaded file is large enough it causes a buffer overflow, allowing for remote code execution.​The PowerShell script is loaded remotely and executed.​ This PowerShell script is then used to download a new payload from the internet such as a RAT or ransomware​.
